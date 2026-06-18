@@ -1,0 +1,38 @@
+{
+  "Comment": "Process price CSV with retry, alert on failure",
+  "StartAt": "ProcessFile",
+  "States": {
+    "ProcessFile": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:{REGION}:{AWS-ACC-ID}:function:process-price-csv",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "AlertFailure"
+        }
+      ],
+      "End": true
+    },
+    "AlertFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:{REGION}:{AWS-ACC-ID}:pipeline-alerts",
+        "Message": "Price pipeline failed to process a file."
+      },
+      "End": true
+    }
+  }
+}
